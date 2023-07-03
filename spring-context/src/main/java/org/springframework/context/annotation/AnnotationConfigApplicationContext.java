@@ -78,6 +78,7 @@ public class AnnotationConfigApplicationContext extends GenericApplicationContex
 	public AnnotationConfigApplicationContext(DefaultListableBeanFactory beanFactory) {
 		super(beanFactory);
 		this.reader = new AnnotatedBeanDefinitionReader(this);
+		// 在这里会给includeFilter加一个@Component元素
 		this.scanner = new ClassPathBeanDefinitionScanner(this);
 	}
 

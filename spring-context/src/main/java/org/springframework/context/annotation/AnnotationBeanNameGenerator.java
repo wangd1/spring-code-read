@@ -80,12 +80,14 @@ public class AnnotationBeanNameGenerator implements BeanNameGenerator {
 	public String generateBeanName(BeanDefinition definition, BeanDefinitionRegistry registry) {
 		if (definition instanceof AnnotatedBeanDefinition) {
 			String beanName = determineBeanNameFromAnnotation((AnnotatedBeanDefinition) definition);
+			// 如果自己设置了beanName,就直接返回
 			if (StringUtils.hasText(beanName)) {
 				// Explicit bean name found.
 				return beanName;
 			}
 		}
 		// Fallback: generate a unique default bean name.
+		// 否则生成一个beanName
 		return buildDefaultBeanName(definition, registry);
 	}
 
@@ -106,6 +108,7 @@ public class AnnotationBeanNameGenerator implements BeanNameGenerator {
 					Set<String> result = amd.getMetaAnnotationTypes(key);
 					return (result.isEmpty() ? Collections.emptySet() : result);
 				});
+				// 获取@Component中的value
 				if (isStereotypeWithNameValue(type, metaTypes, attributes)) {
 					Object value = attributes.get("value");
 					if (value instanceof String) {
@@ -168,6 +171,8 @@ public class AnnotationBeanNameGenerator implements BeanNameGenerator {
 		String beanClassName = definition.getBeanClassName();
 		Assert.state(beanClassName != null, "No bean class name set");
 		String shortClassName = ClassUtils.getShortName(beanClassName);
+		// 首字母小写的beanName。
+		// 如果前两个字母是大写字母，就不做处理，直接返回
 		return Introspector.decapitalize(shortClassName);
 	}
 

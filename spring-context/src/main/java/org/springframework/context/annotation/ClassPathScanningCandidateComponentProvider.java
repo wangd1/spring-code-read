@@ -416,6 +416,7 @@ public class ClassPathScanningCandidateComponentProvider implements EnvironmentC
 	private Set<BeanDefinition> scanCandidateComponents(String basePackage) {
 		Set<BeanDefinition> candidates = new LinkedHashSet<>();
 		try {
+			// 获取basePackage下所有的资源
 			String packageSearchPath = ResourcePatternResolver.CLASSPATH_ALL_URL_PREFIX +
 					resolveBasePackage(basePackage) + '/' + this.resourcePattern;
 			Resource[] resources = getResourcePatternResolver().getResources(packageSearchPath);
@@ -427,13 +428,17 @@ public class ClassPathScanningCandidateComponentProvider implements EnvironmentC
 				}
 				try {
 					MetadataReader metadataReader = getMetadataReaderFactory().getMetadataReader(resource);
+					// 判断是否符合excludeFilter和includeFilter
 					if (isCandidateComponent(metadataReader)) {
+						// 生成BeanDefinition
 						ScannedGenericBeanDefinition sbd = new ScannedGenericBeanDefinition(metadataReader);
 						sbd.setSource(resource);
+						// 判断是否独立的类(静态内部类、顶级类)，是否是抽象类和接口、抽象类是否有带有@Lookup的方法
 						if (isCandidateComponent(sbd)) {
 							if (debugEnabled) {
 								logger.debug("Identified candidate component class: " + resource);
 							}
+							// 添加到结果集
 							candidates.add(sbd);
 						}
 						else {
@@ -485,11 +490,14 @@ public class ClassPathScanningCandidateComponentProvider implements EnvironmentC
 	 * @return whether the class qualifies as a candidate component
 	 */
 	protected boolean isCandidateComponent(MetadataReader metadataReader) throws IOException {
+		// 如果匹配上excludeFilter，那么就不是一个bean，返回false
 		for (TypeFilter tf : this.excludeFilters) {
 			if (tf.match(metadataReader, getMetadataReaderFactory())) {
 				return false;
 			}
 		}
+		// 符合includeFilter的会进行条件匹配，通过了才可能是bean，也就是先看是否有@Component注解（默认会在includeFilter中加入Component注解）
+		// 判断之后，再看是否符合@Conditional注解
 		for (TypeFilter tf : this.includeFilters) {
 			if (tf.match(metadataReader, getMetadataReaderFactory())) {
 				return isConditionMatch(metadataReader);
@@ -504,7 +512,7 @@ public class ClassPathScanningCandidateComponentProvider implements EnvironmentC
 	 * @param metadataReader the ASM ClassReader for the class
 	 * @return whether the class qualifies as a candidate component
 	 */
-	private boolean isConditionMatch(MetadataReader metadataReader) {
+	private boolean  isConditionMatch(MetadataReader metadataReader) {
 		if (this.conditionEvaluator == null) {
 			this.conditionEvaluator =
 					new ConditionEvaluator(getRegistry(), this.environment, this.resourcePatternResolver);
