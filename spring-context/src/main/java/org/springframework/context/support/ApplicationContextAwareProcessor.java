@@ -79,6 +79,13 @@ class ApplicationContextAwareProcessor implements BeanPostProcessor {
 	@Override
 	@Nullable
 	public Object postProcessBeforeInitialization(Object bean, String beanName) throws BeansException {
+		//  a. EnvironmentAware：回传环境变量
+		//  b. EmbeddedValueResolverAware：回传占位符解析器
+		//  c. ResourceLoaderAware：回传资源加载器
+		//  d. ApplicationEventPublisherAware：回传事件发布器
+		//  e. MessageSourceAware：回传国际化资源
+		//  f. ApplicationStartupAware：回传应用其他监听对象，可忽略
+		//  g. ApplicationContextAware：回传Spring容器ApplicationContext
 		if (!(bean instanceof EnvironmentAware || bean instanceof EmbeddedValueResolverAware ||
 				bean instanceof ResourceLoaderAware || bean instanceof ApplicationEventPublisherAware ||
 				bean instanceof MessageSourceAware || bean instanceof ApplicationContextAware ||

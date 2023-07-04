@@ -192,12 +192,14 @@ class DisposableBeanAdapter implements DisposableBean, Runnable, Serializable {
 
 	@Override
 	public void destroy() {
+		// @PreDestroy销毁逻辑
 		if (!CollectionUtils.isEmpty(this.beanPostProcessors)) {
 			for (DestructionAwareBeanPostProcessor processor : this.beanPostProcessors) {
 				processor.postProcessBeforeDestruction(this.bean, this.beanName);
 			}
 		}
 
+		// 实现了DisposableBean接口的
 		if (this.invokeDisposableBean) {
 			if (logger.isTraceEnabled()) {
 				logger.trace("Invoking destroy() on bean with name '" + this.beanName + "'");
@@ -210,6 +212,7 @@ class DisposableBeanAdapter implements DisposableBean, Runnable, Serializable {
 					}, this.acc);
 				}
 				else {
+					// 执行destroy方法
 					((DisposableBean) this.bean).destroy();
 				}
 			}
@@ -227,6 +230,7 @@ class DisposableBeanAdapter implements DisposableBean, Runnable, Serializable {
 			}
 		}
 
+		// 实现了AutoCloseable接口的
 		if (this.invokeAutoCloseable) {
 			if (logger.isTraceEnabled()) {
 				logger.trace("Invoking close() on bean with name '" + this.beanName + "'");
@@ -239,6 +243,7 @@ class DisposableBeanAdapter implements DisposableBean, Runnable, Serializable {
 					}, this.acc);
 				}
 				else {
+					// 执行close方法
 					((AutoCloseable) this.bean).close();
 				}
 			}
@@ -255,9 +260,11 @@ class DisposableBeanAdapter implements DisposableBean, Runnable, Serializable {
 				}
 			}
 		}
+		// 自定义destroy-method方法
 		else if (this.destroyMethod != null) {
 			invokeCustomDestroyMethod(this.destroyMethod);
 		}
+		// 自定义destroy-method方法名称
 		else if (this.destroyMethodName != null) {
 			Method destroyMethod = determineDestroyMethod(this.destroyMethodName);
 			if (destroyMethod != null) {
@@ -396,6 +403,8 @@ class DisposableBeanAdapter implements DisposableBean, Runnable, Serializable {
 		if (destroyMethodName == null) {
 			destroyMethodName = beanDefinition.getDestroyMethodName();
 			boolean autoCloseable = (bean instanceof AutoCloseable);
+			// 销毁方法名称是(inferred)，会判断bean是否有close方法或shutdown方法
+			// 返回方法名称
 			if (AbstractBeanDefinition.INFER_METHOD.equals(destroyMethodName) ||
 					(destroyMethodName == null && autoCloseable)) {
 				// Only perform destroy method inference in case of the bean

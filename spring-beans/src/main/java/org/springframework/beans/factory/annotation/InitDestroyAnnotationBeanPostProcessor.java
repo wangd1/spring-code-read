@@ -207,6 +207,10 @@ public class InitDestroyAnnotationBeanPostProcessor
 			synchronized (this.lifecycleMetadataCache) {
 				metadata = this.lifecycleMetadataCache.get(clazz);
 				if (metadata == null) {
+					// 查找bean中所有带有@PostConstruct和@PreDestroy注解的方法，并分别添加到list中
+					// 然后封装到LifecycleMetadata中，
+					// 赋值给LifecycleMetadata的initMethods和destroyMethods
+					// 返回LifecycleMetadata
 					metadata = buildLifecycleMetadata(clazz);
 					this.lifecycleMetadataCache.put(clazz, metadata);
 				}
@@ -216,7 +220,8 @@ public class InitDestroyAnnotationBeanPostProcessor
 		return metadata;
 	}
 
-	private LifecycleMetadata buildLifecycleMetadata(final Class<?> clazz) {
+	private LifecycleMetadata  buildLifecycleMetadata(final Class<?> clazz) {
+		// 在CommonAnnotationBeanPostProcessor中，设置了initAnnotationType为PostConstruct.class，destroyAnnotationType为PreDestroy.class
 		if (!AnnotationUtils.isCandidateClass(clazz, Arrays.asList(this.initAnnotationType, this.destroyAnnotationType))) {
 			return this.emptyLifecycleMetadata;
 		}
@@ -225,6 +230,8 @@ public class InitDestroyAnnotationBeanPostProcessor
 		List<LifecycleElement> destroyMethods = new ArrayList<>();
 		Class<?> targetClass = clazz;
 
+		// 遍历，将所有带有@PostConstruct注解的方法，封装成LifecycleElement对象，放入initMethods集合中，
+		// 将所有带有@PreDestroy注解的方法，封装成LifecycleElement对象，放入destroyMethods集合中
 		do {
 			final List<LifecycleElement> currInitMethods = new ArrayList<>();
 			final List<LifecycleElement> currDestroyMethods = new ArrayList<>();
@@ -244,13 +251,16 @@ public class InitDestroyAnnotationBeanPostProcessor
 					}
 				}
 			});
-
+			// 父类的初始化方法在子类前面
 			initMethods.addAll(0, currInitMethods);
+			// 父类的销毁方法在子类后面
 			destroyMethods.addAll(currDestroyMethods);
 			targetClass = targetClass.getSuperclass();
 		}
+		// 先遍历子类，后遍历父类
 		while (targetClass != null && targetClass != Object.class);
 
+		// 如果initMethods和destroyMethods都不为空，则创建LifecycleMetadata对象，否则返回emptyLifecycleMetadata
 		return (initMethods.isEmpty() && destroyMethods.isEmpty() ? this.emptyLifecycleMetadata :
 				new LifecycleMetadata(clazz, initMethods, destroyMethods));
 	}
