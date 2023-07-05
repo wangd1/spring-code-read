@@ -1,5 +1,6 @@
 package com.wang;
 
+import com.wang.service.User;
 import com.wang.service.UserService;
 import com.wang.service.WangFactoryBean;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
@@ -12,9 +13,12 @@ public class Test {
 
 		AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext(AppConfig.class);
 
-//		UserService userService = (UserService) context.getBean("userService");
-//		userService.test();
+		UserService userService = (UserService) context.getBean("userService");
+		userService.test();
 
-		WangFactoryBean wangFactoryBean = (WangFactoryBean) context.getBean("wangFactoryBean");
+//		User user = context.getBean("user", User.class);
+
+//		WangFactoryBean wangFactoryBean = (WangFactoryBean) context.getBean("wangFactoryBean");
+//		context.close();
 	}
 }

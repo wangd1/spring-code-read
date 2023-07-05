@@ -304,6 +304,7 @@ public class CommonAnnotationBeanPostProcessor extends InitDestroyAnnotationBean
 	@Override
 	public void postProcessMergedBeanDefinition(RootBeanDefinition beanDefinition, Class<?> beanType, String beanName) {
 		super.postProcessMergedBeanDefinition(beanDefinition, beanType, beanName);
+		// 查找注入点
 		InjectionMetadata metadata = findResourceMetadata(beanName, beanType, null);
 		metadata.checkConfigMembers(beanDefinition);
 	}
@@ -375,6 +376,7 @@ public class CommonAnnotationBeanPostProcessor extends InitDestroyAnnotationBean
 		do {
 			final List<InjectionMetadata.InjectedElement> currElements = new ArrayList<>();
 
+			// 遍历字段
 			ReflectionUtils.doWithLocalFields(targetClass, field -> {
 				if (webServiceRefClass != null && field.isAnnotationPresent(webServiceRefClass)) {
 					if (Modifier.isStatic(field.getModifiers())) {
@@ -388,17 +390,22 @@ public class CommonAnnotationBeanPostProcessor extends InitDestroyAnnotationBean
 					}
 					currElements.add(new EjbRefElement(field, field, null));
 				}
+				// 如果字段上有@Resource注解
 				else if (field.isAnnotationPresent(Resource.class)) {
+					// 静态变量抛异常
 					if (Modifier.isStatic(field.getModifiers())) {
 						throw new IllegalStateException("@Resource annotation is not supported on static fields");
 					}
 					if (!this.ignoredResourceTypes.contains(field.getType().getName())) {
+						// 构造ResourceElement对象
 						currElements.add(new ResourceElement(field, field, null));
 					}
 				}
 			});
 
+			// 遍历方法
 			ReflectionUtils.doWithLocalMethods(targetClass, method -> {
+				// 桥接方法，参考@Autowired那里
 				Method bridgedMethod = BridgeMethodResolver.findBridgedMethod(method);
 				if (!BridgeMethodResolver.isVisibilityBridgeMethodPair(method, bridgedMethod)) {
 					return;
@@ -424,7 +431,9 @@ public class CommonAnnotationBeanPostProcessor extends InitDestroyAnnotationBean
 						PropertyDescriptor pd = BeanUtils.findPropertyForMethod(bridgedMethod, clazz);
 						currElements.add(new EjbRefElement(method, bridgedMethod, pd));
 					}
+					// 方法上是否有@Resource注解
 					else if (bridgedMethod.isAnnotationPresent(Resource.class)) {
+						// 静态方法
 						if (Modifier.isStatic(method.getModifiers())) {
 							throw new IllegalStateException("@Resource annotation is not supported on static methods");
 						}
@@ -433,6 +442,7 @@ public class CommonAnnotationBeanPostProcessor extends InitDestroyAnnotationBean
 							throw new IllegalStateException("@Resource annotation requires a single-arg method: " + method);
 						}
 						if (!this.ignoredResourceTypes.contains(paramTypes[0].getName())) {
+							// 包装成Resource对象
 							PropertyDescriptor pd = BeanUtils.findPropertyForMethod(bridgedMethod, clazz);
 							currElements.add(new ResourceElement(method, bridgedMethod, pd));
 						}
@@ -518,6 +528,7 @@ public class CommonAnnotationBeanPostProcessor extends InitDestroyAnnotationBean
 			throw new NoSuchBeanDefinitionException(element.lookupType,
 					"No resource factory configured - specify the 'resourceFactory' property");
 		}
+		// 根据LookupElement从BeanFactory找到适合的bean对象
 		return autowireResource(this.resourceFactory, element, requestingBeanName);
 	}
 
@@ -539,7 +550,10 @@ public class CommonAnnotationBeanPostProcessor extends InitDestroyAnnotationBean
 
 		if (factory instanceof AutowireCapableBeanFactory) {
 			AutowireCapableBeanFactory beanFactory = (AutowireCapableBeanFactory) factory;
+			// 属性描述器
 			DependencyDescriptor descriptor = element.getDependencyDescriptor();
+			// 假设@Resource中没有指定name，并且field的name或setXxx()的xxx不存在对应的bean，
+			// 那么则根据field类型或方法参数类型从BeanFactory去找
 			if (this.fallbackToDefaultTypeMatch && element.isDefaultName && !factory.containsBean(name)) {
 				autowiredBeanNames = new LinkedHashSet<>();
 				resource = beanFactory.resolveDependency(descriptor, requestingBeanName, autowiredBeanNames, null);
@@ -548,6 +562,8 @@ public class CommonAnnotationBeanPostProcessor extends InitDestroyAnnotationBean
 				}
 			}
 			else {
+				// 如果@Resource指定了name，那么就直接getBean(name)
+				// 如果@Resource没指定name，但是field的name或setXxx()的xxx存在对应的bean，那么也直接getBean(name)
 				resource = beanFactory.resolveBeanByName(name, descriptor);
 				autowiredBeanNames = Collections.singleton(name);
 			}
@@ -641,19 +657,28 @@ public class CommonAnnotationBeanPostProcessor extends InitDestroyAnnotationBean
 		public ResourceElement(Member member, AnnotatedElement ae, @Nullable PropertyDescriptor pd) {
 			super(member, pd);
 			Resource resource = ae.getAnnotation(Resource.class);
+			// 这个name是@Resource中的name属性
 			String resourceName = resource.name();
 			Class<?> resourceType = resource.type();
+			// 使用@Resource时没有指定具体的name，那么则用field的name，或setXxx()中的xxx
 			this.isDefaultName = !StringUtils.hasLength(resourceName);
+			// 如果没有指定name
 			if (this.isDefaultName) {
+				// 取变量的名称
 				resourceName = this.member.getName();
+				// 如果是方法，取setXxx()中的xxx，并做处理，比如首字母小写之类的
 				if (this.member instanceof Method && resourceName.startsWith("set") && resourceName.length() > 3) {
 					resourceName = Introspector.decapitalize(resourceName.substring(3));
 				}
 			}
+			// 如果指定了name，使用@Resource时指定了具体的name，进行占位符填充
 			else if (embeddedValueResolver != null) {
 				resourceName = embeddedValueResolver.resolveStringValue(resourceName);
 			}
+			// @Resource除开可以指定bean，还可以指定type，type默认为Object
 			if (Object.class != resourceType) {
+				// 如果指定了type，则验证一下和field的类型或set方法的第一个参数类型，是否和所指定的resourceType匹配
+				// 比如@Resource(type=Foo.class) private Bar bar; 这种情况下，bar的类型必须是Foo或者Foo的子类
 				checkResourceType(resourceType);
 			}
 			else {
@@ -664,12 +689,15 @@ public class CommonAnnotationBeanPostProcessor extends InitDestroyAnnotationBean
 			this.lookupType = resourceType;
 			String lookupValue = resource.lookup();
 			this.mappedName = (StringUtils.hasLength(lookupValue) ? lookupValue : resource.mappedName());
+			// 如果有@Lazy注解，那么就是懒加载，之后会生成一个代理对象
 			Lazy lazy = ae.getAnnotation(Lazy.class);
 			this.lazyLookup = (lazy != null && lazy.value());
 		}
 
 		@Override
 		protected Object getResourceToInject(Object target, @Nullable String requestingBeanName) {
+			// 这里的lazyLookup，如果有@Lazy注解，则为true，就会去创建代理对象
+			// 否则执行注入方法
 			return (this.lazyLookup ? buildLazyResourceProxy(this, requestingBeanName) :
 					getResource(this, requestingBeanName));
 		}

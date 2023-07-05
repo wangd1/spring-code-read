@@ -2,12 +2,14 @@ package com.wang;
 
 
 import com.wang.service.UserService;
+import org.springframework.beans.factory.annotation.Autowire;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 
 @ComponentScan(value = "com.wang")
 public final class AppConfig {
 
+//	@Bean(autowire = Autowire.BY_NAME)
 	@Bean
 	public UserService userService(){
 		return new UserService();
