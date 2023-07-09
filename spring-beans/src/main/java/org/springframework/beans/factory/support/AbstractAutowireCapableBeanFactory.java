@@ -543,6 +543,7 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 		}
 
 		try {
+			// 实例化
 			Object beanInstance = doCreateBean(beanName, mbdToUse, args);
 			if (logger.isTraceEnabled()) {
 				logger.trace("Finished creating instance of bean '" + beanName + "'");
@@ -1233,27 +1234,36 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 			synchronized (mbd.constructorArgumentLock) {
 				if (mbd.resolvedConstructorOrFactoryMethod != null) {
 					resolved = true;
+					// autowireNecessary表示有没有必要要进行注入，
+					// 比如当前BeanDefinition用的是无参构造方法，那么autowireNecessary为false，否则为true，表示需要给构造方法参数注入值
 					autowireNecessary = mbd.constructorArgumentsResolved;
 				}
 			}
 		}
+		// 如果已经确定了构造方法，那么就可以直接进行实例化了
 		if (resolved) {
 			// 如果确定了当前BeanDefinition的构造方法，那么看是否需要进行对构造方法进行参数的依赖注入（构造方法注入）
 			if (autowireNecessary) {
+				// 方法内会拿到缓存好的构造方法的入参
 				return autowireConstructor(beanName, mbd, null, null);
 			}
 			else {
 				// 如果不需要注入，则表示用的是默认无参构造方法，直接进行实例化
+				// 构造方法已经找到了，但是没有参数，那就表示是无参，直接进行实例化
 				return instantiateBean(beanName, mbd);
 			}
 		}
 
+		// 如果没有找过构造方法，那么就开始找了
+
 		// Candidate constructors for autowiring?
 		// 提供一个扩展点，可以利用SmartInstantiationAwareBeanPostProcessor来控制用beanClass中的哪个构造方法
+		// 比如AutowiredAnnotationBeanPostProcessor会把加了@Autowired注解的构造方法找出来，具体看代码实现会更复杂一点
 		Constructor<?>[] ctors = determineConstructorsFromBeanPostProcessors(beanClass, beanName);
-		// 如果ctors有值则需要进行构造方法注入，或者autowiredMode是AUTOWIRE_CONSTRUCTOR
-		// 或者BeanDefinition中添加了构造方法的参数和值，或者调用getBean()方法时传入了args
-		// 构造方法注入：首先包括
+		// 如果推断出来了构造方法，则需要给构造方法赋值，也就是给构造方法参数赋值，也就是构造方法注入
+		// 如果没有推断出来构造方法，但是autowiremode为AUTOWIRE_CONSTRUCTOR，则也可能需要给构造方法赋值，因为不确定是用无参的还是有参的构造方法
+		// 如果通过BeanDefinition指定了构造方法参数值，那肯定就是要进行构造方法注入了
+		// 如果调用getBean的时候传入了构造方法参数值，那肯定就是要进行构造方法注入了
 		if (ctors != null || mbd.getResolvedAutowireMode() == AUTOWIRE_CONSTRUCTOR ||
 				mbd.hasConstructorArgumentValues() || !ObjectUtils.isEmpty(args)) {
 			return autowireConstructor(beanName, mbd, ctors, args);
