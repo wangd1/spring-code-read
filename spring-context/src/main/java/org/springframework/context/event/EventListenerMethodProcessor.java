@@ -124,6 +124,7 @@ public class EventListenerMethodProcessor
 		String[] beanNames = beanFactory.getBeanNamesForType(Object.class);
 		for (String beanName : beanNames) {
 			if (!ScopedProxyUtils.isScopedTarget(beanName)) {
+				// 拿到当前Bean对象的类型
 				Class<?> type = null;
 				try {
 					type = AutoProxyUtils.determineTargetClass(beanFactory, beanName);
@@ -169,6 +170,7 @@ public class EventListenerMethodProcessor
 
 			Map<Method, EventListener> annotatedMethods = null;
 			try {
+				// 找到所有加了@EventListener注解的方法
 				annotatedMethods = MethodIntrospector.selectMethods(targetType,
 						(MethodIntrospector.MetadataLookup<EventListener>) method ->
 								AnnotatedElementUtils.findMergedAnnotation(method, EventListener.class));
@@ -194,6 +196,7 @@ public class EventListenerMethodProcessor
 				Assert.state(factories != null, "EventListenerFactory List not initialized");
 				for (Method method : annotatedMethods.keySet()) {
 					for (EventListenerFactory factory : factories) {
+						// 利用EventListenerFactory来对加了@EventListener注解的方法生成ApplicationListener对象
 						if (factory.supportsMethod(method)) {
 							Method methodToUse = AopUtils.selectInvocableMethod(method, context.getType(beanName));
 							ApplicationListener<?> applicationListener =

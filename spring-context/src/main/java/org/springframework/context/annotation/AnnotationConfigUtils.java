@@ -149,6 +149,8 @@ public abstract class AnnotationConfigUtils {
 			BeanDefinitionRegistry registry, @Nullable Object source) {
 
 		DefaultListableBeanFactory beanFactory = unwrapDefaultListableBeanFactory(registry);
+		// 设置beanFactory的OrderComparator为AnnotationAwareOrderComparator
+		// 它是一个Comparator，是一个比较器，可以用来进行排序，比如new ArrayList<>().sort(Comparator);
 		if (beanFactory != null) {
 			if (!(beanFactory.getDependencyComparator() instanceof AnnotationAwareOrderComparator)) {
 				beanFactory.setDependencyComparator(AnnotationAwareOrderComparator.INSTANCE);
@@ -160,18 +162,21 @@ public abstract class AnnotationConfigUtils {
 
 		Set<BeanDefinitionHolder> beanDefs = new LinkedHashSet<>(8);
 
+		// 注册ConfigurationClassPostProcessor类型的BeanDefinition，配置类
 		if (!registry.containsBeanDefinition(CONFIGURATION_ANNOTATION_PROCESSOR_BEAN_NAME)) {
 			RootBeanDefinition def = new RootBeanDefinition(ConfigurationClassPostProcessor.class);
 			def.setSource(source);
 			beanDefs.add(registerPostProcessor(registry, def, CONFIGURATION_ANNOTATION_PROCESSOR_BEAN_NAME));
 		}
 
+		// 注册AutowiredAnnotationBeanPostProcessor类型的BeanDefinition，@Autowired、@Value注解的处理器
 		if (!registry.containsBeanDefinition(AUTOWIRED_ANNOTATION_PROCESSOR_BEAN_NAME)) {
 			RootBeanDefinition def = new RootBeanDefinition(AutowiredAnnotationBeanPostProcessor.class);
 			def.setSource(source);
 			beanDefs.add(registerPostProcessor(registry, def, AUTOWIRED_ANNOTATION_PROCESSOR_BEAN_NAME));
 		}
 
+		// 注册CommonAnnotationBeanPostProcessor类型的BeanDefinition，@Resource注解的处理器
 		// Check for JSR-250 support, and if present add the CommonAnnotationBeanPostProcessor.
 		if (jsr250Present && !registry.containsBeanDefinition(COMMON_ANNOTATION_PROCESSOR_BEAN_NAME)) {
 			RootBeanDefinition def = new RootBeanDefinition(CommonAnnotationBeanPostProcessor.class);
@@ -179,6 +184,7 @@ public abstract class AnnotationConfigUtils {
 			beanDefs.add(registerPostProcessor(registry, def, COMMON_ANNOTATION_PROCESSOR_BEAN_NAME));
 		}
 
+		// 注册PersistenceAnnotationBeanPostProcessor类型的BeanDefinition
 		// Check for JPA support, and if present add the PersistenceAnnotationBeanPostProcessor.
 		if (jpaPresent && !registry.containsBeanDefinition(PERSISTENCE_ANNOTATION_PROCESSOR_BEAN_NAME)) {
 			RootBeanDefinition def = new RootBeanDefinition();
@@ -194,12 +200,13 @@ public abstract class AnnotationConfigUtils {
 			beanDefs.add(registerPostProcessor(registry, def, PERSISTENCE_ANNOTATION_PROCESSOR_BEAN_NAME));
 		}
 
+		// 注册EventListenerMethodProcessor类型的BeanDefinition，用来处理@EventListener注解的
 		if (!registry.containsBeanDefinition(EVENT_LISTENER_PROCESSOR_BEAN_NAME)) {
 			RootBeanDefinition def = new RootBeanDefinition(EventListenerMethodProcessor.class);
 			def.setSource(source);
 			beanDefs.add(registerPostProcessor(registry, def, EVENT_LISTENER_PROCESSOR_BEAN_NAME));
 		}
-
+		// 注册DefaultEventListenerFactory类型的BeanDefinition，用来处理@EventListener注解的
 		if (!registry.containsBeanDefinition(EVENT_LISTENER_FACTORY_BEAN_NAME)) {
 			RootBeanDefinition def = new RootBeanDefinition(DefaultEventListenerFactory.class);
 			def.setSource(source);

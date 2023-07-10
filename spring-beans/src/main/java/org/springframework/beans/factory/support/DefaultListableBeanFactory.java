@@ -982,7 +982,7 @@ public class DefaultListableBeanFactory extends AbstractAutowireCapableBeanFacto
 			}
 		}
 
-		// 所有的非懒加载单例Bean都创建完了后
+		// 所有的非懒加载单例Bean都创建完了后，执行SmartInitializingSingleton接口的afterSingletonsInstantiated方法，会解析@EventListner注解
 		// Trigger post-initialization callback for all applicable beans...
 		for (String beanName : beanNames) {
 			Object singletonInstance = getSingleton(beanName);
@@ -1028,6 +1028,7 @@ public class DefaultListableBeanFactory extends AbstractAutowireCapableBeanFacto
 
 		BeanDefinition existingDefinition = this.beanDefinitionMap.get(beanName);
 		if (existingDefinition != null) {
+			// 默认是允许BeanDefinition覆盖的
 			if (!isAllowBeanDefinitionOverriding()) {
 				throw new BeanDefinitionOverrideException(beanName, beanDefinition, existingDefinition);
 			}
