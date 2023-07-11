@@ -11,9 +11,9 @@ public class IoCTest {
 	public static void main(String[] args) {
 		AnnotationConfigApplicationContext applicationContext = new AnnotationConfigApplicationContext(AppConfig.class);
 
-		AppConfig appConfig = applicationContext.getBean("appConfig", AppConfig.class);
-		UserService userService = appConfig.userService();
-		userService.test();
+//		AppConfig appConfig = applicationContext.getBean("appConfig", AppConfig.class);
+//		UserService userService = appConfig.userService();
+//		userService.test();
 	}
 
 }

@@ -21,7 +21,10 @@ dependencies {
 //    compile group: 'org.mybatis', name: 'mybatis-spring', version: '1.3.2'
 //	compileOnly group: 'org.mybatis', name: 'mybatis-spring', version: '2.0.5'
 //	compile group: 'mysql', name: 'mysql-connector-java', version: '5.1.44'
-//	compile group: 'org.mybatis', name: 'mybatis', version: '3.4.5'
+//	compile group: "org.mybatis", name: "mybatis", version: "3.4.5"
+	implementation("org.mybatis:mybatis-spring:2.0.5")
+	implementation("org.mybatis:mybatis:3.4.5")
+	implementation("mysql:mysql-connector-java:8.0.26")
 //
 //	// https://mvnrepository.com/artifact/cglib/cglib
 ////    compile group: 'cglib', name: 'cglib', version: '3.2.12'
